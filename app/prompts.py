@@ -12,6 +12,8 @@ Read the following document and perform the following tasks:
 2. Identify 3-5 major tags or keywords from the document content as "Tags".
 3. Provide a 2-3 sentence summary of the document as "summary".
 4. Explain why you chose the document_type in a field called "reasoning".
+5. If document_type is "Aadhar Card" or "Pan Card", extract the card number and set it in the field "id_number". If not, set "id_number" as "Unknown".
+
 
 Use this JSON format for the output:
 
@@ -20,6 +22,7 @@ Use this JSON format for the output:
 "Tags": "<Major tags present in the document>",
 "summary": "<Summary of the content>",
 "reasoning": "<Brief classification reasoning>"
+"id_number": "Adhar Card or Pan Card number"
 }
 
 -------------------------

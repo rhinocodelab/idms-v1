@@ -758,13 +758,17 @@ def load_criticality_config(config_file_path: str) -> Dict:
         logger.error(f"Error parsing criticality configuration file: {e}")
         raise HTTPException(status_code=400, detail="Error parsing criticality configuration file.")
 
-def upload_to_filenet(image_path: str, document_type: str, confidentiality: str) -> None:
+def upload_to_filenet(image_path: str, document_type: str, confidentiality: str, storage_type: str, retention_period: str, id_number: str) -> None:
     """
     Upload the image to FileNet using the Java CLI.
 
     Args:
         image_path (str): Path to the image file on disk.
         document_type (str): The document type extracted from AI model output.
+        confidentiality (str): Document confidentiality level.
+        storage_type (str): Storage location e.g., Local Folder
+        retention_period (str): Retention duration in years for the document
+        id_number (str): Aadhaar or PAN number linked to the document
 
     Raises:
         subprocess.CalledProcessError: If the Java command fails.
@@ -775,13 +779,14 @@ def upload_to_filenet(image_path: str, document_type: str, confidentiality: str)
         r"C:\Users\Administrator\Desktop\FileNetUpload.jar",
         image_path,
         document_type,
-        confidentiality
+        confidentiality,
+        storage_type,
+        retention_period,
+        id_number
     ]
-
-    # result = subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    # return result.stdout  # Return output for logging or further processing if needed
     logger.info(f"FileNet command====, {command}")
-    return True
+    result = subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    return result.stdout  # Return output for logging or further processing if needed
 
 def save_uploaded_file(uploaded_file: UploadFile, dest_folder: str) -> str:
     """ Save uploaded file to disk and return full file path. """
@@ -798,6 +803,7 @@ def assign_criticality_and_upload(file_path: str, result: dict, criticality_conf
         result = {
             "document_type": "Unknown",
             "criticality": "Unknown",
+            "id_number": "Unknown",
             "error": "File could not be processed."
         }
         return result
@@ -810,9 +816,14 @@ def assign_criticality_and_upload(file_path: str, result: dict, criticality_conf
     criticality = criticality_config.get(doc_type, "Unknown")
     result["criticality"] = criticality
 
+    # Add additional 3 parameters
+    storage_type = criticality_config.get("storage type", "Local Folder")
+    retention_period = criticality_config.get("retention period", "3")
+    id_number = result.get("id_number", "Unknown")
+
     # FileNet upload attempt
     try:
-        filenet_output = upload_to_filenet(file_path, doc_type, criticality)
+        filenet_output = upload_to_filenet(file_path, doc_type, criticality, storage_type, retention_period, id_number)
         logger.info(f"FileNet upload successful for {file_path}: {filenet_output}")
         result['filenet_upload'] = "Success"
     except subprocess.CalledProcessError as e:
@@ -2130,6 +2141,10 @@ async def get_ghostlayer_marked_image(request: Request, document_id: int):
         if user_role != 'admin' and document['user_id'] != user_data['id']:
             raise HTTPException(status_code=403, detail="Access denied - document belongs to another user")
         
+        # Check if user has permission to view redacted documents
+        if not user_data.get('ghostlayer_view_redacted', False):
+            raise HTTPException(status_code=403, detail="No permission to view redacted documents")
+        
         # Check if coordinates file exists
         coordinates_path = document.get('coordinates_json_path')
         if not coordinates_path or not os.path.exists(coordinates_path):
@@ -2176,6 +2191,43 @@ async def get_ghostlayer_marked_image(request: Request, document_id: int):
     except Exception as e:
         logger.error(f"Error generating marked image for document {document_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to generate marked image: {str(e)}")
+
+@app.get("/api/ghostlayer/original/{document_id}")
+async def get_ghostlayer_original_image(request: Request, document_id: int):
+    """Get original image for a user's document with permission checks"""
+    try:
+        # Get user from session
+        user_data = require_auth(request)
+        if not user_data:
+            raise HTTPException(status_code=401, detail="Authentication required")
+        
+        document = db.get_user_ghostlayer_document_by_id(document_id)
+        if not document:
+            raise HTTPException(status_code=404, detail="Document not found")
+        
+        # Verify the document belongs to the current user OR user is admin
+        user_role = user_data.get('role', 'viewer')
+        if user_role != 'admin' and document['user_id'] != user_data['id']:
+            raise HTTPException(status_code=403, detail="Access denied - document belongs to another user")
+        
+        # Check if user has permission to view original documents
+        if not user_data.get('ghostlayer_view_original', False):
+            raise HTTPException(status_code=403, detail="No permission to view original documents")
+        
+        # Check if original image exists
+        image_path = document['document_path']
+        if not os.path.exists(image_path):
+            raise HTTPException(status_code=404, detail="Original image not found")
+        
+        # Return the original image
+        from fastapi.responses import FileResponse
+        return FileResponse(image_path, media_type="image/jpeg")
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error serving original image for document {document_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to serve original image: {str(e)}")
 
 @app.get("/api/ghostlayer/test-config")
 async def test_ghostlayer_config():
@@ -2717,6 +2769,8 @@ async def create_user(request: Request):
             is_mfa_enabled=data.get("mfa_enabled", False),
             ai_classification_access=data.get("ai_classification_access", True),
             ghostlayer_access=data.get("ghostlayer_access", True),
+            ghostlayer_view_original=data.get("ghostlayer_view_original", True),
+            ghostlayer_view_redacted=data.get("ghostlayer_view_redacted", True),
             created_by=user.get("id")
         )
         

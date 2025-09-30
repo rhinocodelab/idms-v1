@@ -164,9 +164,21 @@
                                     <span class="text-sm text-gray-700">AI Document Classification</span>
                                 </label>
                                 <label class="flex items-center">
-                                    <input type="checkbox" id="newGhostLayer" checked class="mr-2">
+                                    <input type="checkbox" id="newGhostLayer" checked class="mr-2" onchange="toggleGhostLayerSubPermissions()">
                                     <span class="text-sm text-gray-700">GhostLayer AI</span>
                                 </label>
+                                
+                                <!-- GhostLayer Sub-permissions -->
+                                <div id="newGhostLayerSubPermissions" class="ml-6 mt-2 space-y-2">
+                                    <label class="flex items-center">
+                                        <input type="checkbox" id="newGhostLayerViewOriginal" checked class="mr-2">
+                                        <span class="text-xs text-gray-600">View Original Documents</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" id="newGhostLayerViewRedacted" checked class="mr-2">
+                                        <span class="text-xs text-gray-600">View Redacted Documents</span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -248,9 +260,21 @@
                                     <span class="text-sm text-gray-700">AI Document Classification</span>
                                 </label>
                                 <label class="flex items-center">
-                                    <input type="checkbox" id="editGhostLayer" class="mr-2">
+                                    <input type="checkbox" id="editGhostLayer" class="mr-2" onchange="toggleEditGhostLayerSubPermissions()">
                                     <span class="text-sm text-gray-700">GhostLayer AI</span>
                                 </label>
+                                
+                                <!-- GhostLayer Sub-permissions -->
+                                <div id="editGhostLayerSubPermissions" class="ml-6 mt-2 space-y-2">
+                                    <label class="flex items-center">
+                                        <input type="checkbox" id="editGhostLayerViewOriginal" class="mr-2">
+                                        <span class="text-xs text-gray-600">View Original Documents</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" id="editGhostLayerViewRedacted" class="mr-2">
+                                        <span class="text-xs text-gray-600">View Redacted Documents</span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -474,6 +498,20 @@ function renderUsersTable(users) {
                             GhostLayer AI
                         </span>
                     </div>
+                    ${user.ghostlayer_access == 1 || user.ghostlayer_access === true ? `
+                    <div class="flex items-center ml-3">
+                        <span class="text-xs ${user.ghostlayer_view_original == 1 || user.ghostlayer_view_original === true ? 'text-green-600' : 'text-red-600'}">
+                            <i class="fas ${user.ghostlayer_view_original == 1 || user.ghostlayer_view_original === true ? 'fa-check-circle' : 'fa-times-circle'} mr-1"></i>
+                            View Original
+                        </span>
+                    </div>
+                    <div class="flex items-center ml-3">
+                        <span class="text-xs ${user.ghostlayer_view_redacted == 1 || user.ghostlayer_view_redacted === true ? 'text-green-600' : 'text-red-600'}">
+                            <i class="fas ${user.ghostlayer_view_redacted == 1 || user.ghostlayer_view_redacted === true ? 'fa-check-circle' : 'fa-times-circle'} mr-1"></i>
+                            View Redacted
+                        </span>
+                    </div>
+                    ` : ''}
                 </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -596,7 +634,9 @@ document.getElementById('createUserForm').addEventListener('submit', async funct
         is_active: document.getElementById('newIsActive').checked,
         mfa_enabled: document.getElementById('newMFA').checked,
         ai_classification_access: document.getElementById('newAIClassification').checked,
-        ghostlayer_access: document.getElementById('newGhostLayer').checked
+        ghostlayer_access: document.getElementById('newGhostLayer').checked,
+        ghostlayer_view_original: document.getElementById('newGhostLayerViewOriginal').checked,
+        ghostlayer_view_redacted: document.getElementById('newGhostLayerViewRedacted').checked
     };
     
     // Show progress modal
@@ -663,7 +703,9 @@ document.getElementById('editUserForm').addEventListener('submit', async functio
         is_active: document.getElementById('editIsActive').checked,
         mfa_enabled: document.getElementById('editMFA').checked,
         ai_classification_access: document.getElementById('editAIClassification').checked,
-        ghostlayer_access: document.getElementById('editGhostLayer').checked
+        ghostlayer_access: document.getElementById('editGhostLayer').checked,
+        ghostlayer_view_original: document.getElementById('editGhostLayerViewOriginal').checked,
+        ghostlayer_view_redacted: document.getElementById('editGhostLayerViewRedacted').checked
     };
     
     try {
@@ -857,6 +899,11 @@ function editUser(userId) {
     document.getElementById('editMFA').checked = user.is_mfa_enabled;
     document.getElementById('editAIClassification').checked = user.ai_classification_access == 1 || user.ai_classification_access === true;
     document.getElementById('editGhostLayer').checked = user.ghostlayer_access == 1 || user.ghostlayer_access === true;
+    document.getElementById('editGhostLayerViewOriginal').checked = user.ghostlayer_view_original == 1 || user.ghostlayer_view_original === true;
+    document.getElementById('editGhostLayerViewRedacted').checked = user.ghostlayer_view_redacted == 1 || user.ghostlayer_view_redacted === true;
+    
+    // Show/hide sub-permissions based on GhostLayer access
+    toggleEditGhostLayerSubPermissions();
     
     // Store the user ID for the update
     document.getElementById('editUserForm').setAttribute('data-user-id', userId);
@@ -868,6 +915,36 @@ function editUser(userId) {
 function hideEditUserModal() {
     document.getElementById('editUserModal').classList.add('hidden');
     document.getElementById('editUserForm').reset();
+}
+
+// Toggle GhostLayer sub-permissions for Create User
+function toggleGhostLayerSubPermissions() {
+    const ghostlayerCheckbox = document.getElementById('newGhostLayer');
+    const subPermissions = document.getElementById('newGhostLayerSubPermissions');
+    
+    if (ghostlayerCheckbox.checked) {
+        subPermissions.style.display = 'block';
+    } else {
+        subPermissions.style.display = 'none';
+        // Uncheck sub-permissions when main checkbox is unchecked
+        document.getElementById('newGhostLayerViewOriginal').checked = false;
+        document.getElementById('newGhostLayerViewRedacted').checked = false;
+    }
+}
+
+// Toggle GhostLayer sub-permissions for Edit User
+function toggleEditGhostLayerSubPermissions() {
+    const ghostlayerCheckbox = document.getElementById('editGhostLayer');
+    const subPermissions = document.getElementById('editGhostLayerSubPermissions');
+    
+    if (ghostlayerCheckbox.checked) {
+        subPermissions.style.display = 'block';
+    } else {
+        subPermissions.style.display = 'none';
+        // Uncheck sub-permissions when main checkbox is unchecked
+        document.getElementById('editGhostLayerViewOriginal').checked = false;
+        document.getElementById('editGhostLayerViewRedacted').checked = false;
+    }
 }
 
 // Password visibility toggle for Create New User modal

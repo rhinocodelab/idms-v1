@@ -187,6 +187,9 @@ async function loadDocument() {
         documentData = await response.json();
         updateDocumentInfo();
         
+        // Check user permissions and configure UI
+        checkUserPermissions();
+        
         // Load both images
         await loadImages();
         
@@ -205,14 +208,76 @@ function updateDocumentInfo() {
     document.getElementById('viewer-upload-date').textContent = new Date(documentData.upload_timestamp).toLocaleDateString();
 }
 
+// Check user permissions and configure UI
+function checkUserPermissions() {
+    const userData = JSON.parse(localStorage.getItem('user') || '{}');
+    
+    // Debug logging
+    console.log('User permissions check:', {
+        ghostlayer_view_original: userData.ghostlayer_view_original,
+        ghostlayer_view_redacted: userData.ghostlayer_view_redacted,
+        ghostlayer_access: userData.ghostlayer_access
+    });
+    
+    const originalTab = document.getElementById('tab-original');
+    const redactedTab = document.getElementById('tab-marked');
+    const tabNavigation = document.getElementById('tab-navigation');
+    
+    // Check if user has permission to view original documents
+    if (!userData.ghostlayer_view_original) {
+        if (originalTab) originalTab.style.display = 'none';
+    }
+    
+    // Check if user has permission to view redacted documents
+    if (!userData.ghostlayer_view_redacted) {
+        if (redactedTab) redactedTab.style.display = 'none';
+    }
+    
+    // If user has only one permission, hide tab navigation and show content directly
+    if (!userData.ghostlayer_view_original && userData.ghostlayer_view_redacted) {
+        // Only redacted access - show redacted content directly
+        if (tabNavigation) tabNavigation.style.display = 'none';
+        if (redactedTab) {
+            redactedTab.classList.remove('hidden');
+            redactedTab.classList.add('tab-content');
+        }
+    } else if (userData.ghostlayer_view_original && !userData.ghostlayer_view_redacted) {
+        // Only original access - show original content directly
+        if (tabNavigation) tabNavigation.style.display = 'none';
+        if (originalTab) {
+            originalTab.classList.remove('hidden');
+            originalTab.classList.add('tab-content');
+        }
+    }
+    
+    // If user has no permissions, show error
+    if (!userData.ghostlayer_view_original && !userData.ghostlayer_view_redacted) {
+        showError('No permission to view documents');
+        return; // Stop execution if no permissions
+    }
+}
+
 // Load both original and marked images
 async function loadImages() {
     try {
-        // Load original image
-        await loadOriginalImage();
+        const userData = JSON.parse(localStorage.getItem('user') || '{}');
         
-        // Load marked image
-        await loadMarkedImage();
+        // Load images based on user permissions
+        if (userData.ghostlayer_view_original) {
+            try {
+                await loadOriginalImage();
+            } catch (error) {
+                console.warn('Failed to load original image:', error);
+            }
+        }
+        
+        if (userData.ghostlayer_view_redacted) {
+            try {
+                await loadMarkedImage();
+            } catch (error) {
+                console.warn('Failed to load marked image:', error);
+            }
+        }
         
         // Setup zoom functionality
         setupZoom();
@@ -229,8 +294,11 @@ async function loadImages() {
 // Load original image
 async function loadOriginalImage() {
     try {
-        const response = await fetch(`/api/ghostlayer/download/${documentId}`);
+        const response = await fetch(`/api/ghostlayer/original/${documentId}`);
         if (!response.ok) {
+            if (response.status === 403) {
+                throw new Error('No permission to view original documents');
+            }
             throw new Error('Failed to load original image');
         }
         
@@ -251,6 +319,9 @@ async function loadMarkedImage() {
     try {
         const response = await fetch(`/api/ghostlayer/view/${documentId}`);
         if (!response.ok) {
+            if (response.status === 403) {
+                throw new Error('No permission to view redacted documents');
+            }
             throw new Error('Failed to load marked image');
         }
         

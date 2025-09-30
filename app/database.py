@@ -80,6 +80,19 @@ class IDMSDatabase:
                     logger.info("Added ghostlayer_access column to users table")
                 else:
                     logger.info("ghostlayer_access column already exists in users table")
+                
+                # Add GhostLayer view permission columns
+                if 'ghostlayer_view_original' not in columns:
+                    cursor.execute("ALTER TABLE users ADD COLUMN ghostlayer_view_original BOOLEAN DEFAULT 1")
+                    logger.info("Added ghostlayer_view_original column to users table")
+                else:
+                    logger.info("ghostlayer_view_original column already exists in users table")
+                
+                if 'ghostlayer_view_redacted' not in columns:
+                    cursor.execute("ALTER TABLE users ADD COLUMN ghostlayer_view_redacted BOOLEAN DEFAULT 1")
+                    logger.info("Added ghostlayer_view_redacted column to users table")
+                else:
+                    logger.info("ghostlayer_view_redacted column already exists in users table")
             
             conn.commit()
             logger.info("Database migration completed successfully")
@@ -103,6 +116,8 @@ class IDMSDatabase:
                 is_mfa_enabled BOOLEAN DEFAULT 0,
                 ai_classification_access BOOLEAN DEFAULT 1, -- Access to AI Document Classification
                 ghostlayer_access BOOLEAN DEFAULT 1, -- Access to GhostLayer AI
+                ghostlayer_view_original BOOLEAN DEFAULT 1, -- View original documents in GhostLayer
+                ghostlayer_view_redacted BOOLEAN DEFAULT 1, -- View redacted documents in GhostLayer
                 last_login DATETIME,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -1425,7 +1440,7 @@ class IDMSDatabase:
         
         try:
             cursor.execute("""
-                SELECT id, username, full_name, email, role, is_active, is_mfa_enabled, mfa_secret, mfa_setup_complete, has_changed_default_password, last_login, ai_classification_access, ghostlayer_access
+                SELECT id, username, full_name, email, role, is_active, is_mfa_enabled, mfa_secret, mfa_setup_complete, has_changed_default_password, last_login, ai_classification_access, ghostlayer_access, ghostlayer_view_original, ghostlayer_view_redacted
                 FROM users 
                 WHERE (username = ? OR email = ?) AND password_hash = ? AND is_active = 1
             """, (username_or_email, username_or_email, password_hash))
@@ -1453,7 +1468,9 @@ class IDMSDatabase:
                     'has_changed_default_password': user[9],
                     'last_login': user[10],
                     'ai_classification_access': user[11],
-                    'ghostlayer_access': user[12]
+                    'ghostlayer_access': user[12],
+                    'ghostlayer_view_original': user[13],
+                    'ghostlayer_view_redacted': user[14]
                 }
             else:
                 logger.warning(f"No user found for: {username_or_email}")
@@ -1471,7 +1488,8 @@ class IDMSDatabase:
     def create_user(self, username: str, password: str, full_name: str, 
                    email: str = None, role: str = 'analyst', is_active: bool = True, 
                    is_mfa_enabled: bool = False, ai_classification_access: bool = True,
-                   ghostlayer_access: bool = True, created_by: int = None) -> bool:
+                   ghostlayer_access: bool = True, ghostlayer_view_original: bool = True,
+                   ghostlayer_view_redacted: bool = True, created_by: int = None) -> bool:
         """Create a new user"""
         import hashlib
         password_hash = hashlib.sha256(password.encode()).hexdigest()
@@ -1487,9 +1505,9 @@ class IDMSDatabase:
         
         try:
             cursor.execute("""
-                INSERT INTO users (username, password_hash, full_name, email, role, is_active, is_mfa_enabled, ai_classification_access, ghostlayer_access, created_by)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (username, password_hash, full_name, email, role, is_active, is_mfa_enabled, ai_classification_access, ghostlayer_access, created_by))
+                INSERT INTO users (username, password_hash, full_name, email, role, is_active, is_mfa_enabled, ai_classification_access, ghostlayer_access, ghostlayer_view_original, ghostlayer_view_redacted, created_by)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (username, password_hash, full_name, email, role, is_active, is_mfa_enabled, ai_classification_access, ghostlayer_access, ghostlayer_view_original, ghostlayer_view_redacted, created_by))
             conn.commit()
             logger.info(f"User {username} created successfully with email {email}")
             return True
@@ -1510,7 +1528,7 @@ class IDMSDatabase:
         try:
             cursor.execute("""
                 SELECT id, username, full_name, email, role, is_active, 
-                       is_mfa_enabled, mfa_setup_complete, has_changed_default_password, last_login, created_at, updated_at, ai_classification_access, ghostlayer_access
+                       is_mfa_enabled, mfa_setup_complete, has_changed_default_password, last_login, created_at, updated_at, ai_classification_access, ghostlayer_access, ghostlayer_view_original, ghostlayer_view_redacted
                 FROM users 
                 ORDER BY created_at DESC
             """)
@@ -1531,7 +1549,9 @@ class IDMSDatabase:
                     'created_at': row[10],
                     'updated_at': row[11],
                     'ai_classification_access': row[12],
-                    'ghostlayer_access': row[13]
+                    'ghostlayer_access': row[13],
+                    'ghostlayer_view_original': row[14],
+                    'ghostlayer_view_redacted': row[15]
                 })
             return users
         except Exception as e:
@@ -1555,7 +1575,7 @@ class IDMSDatabase:
                     import hashlib
                     value = hashlib.sha256(value.encode()).hexdigest()
                     field = 'password_hash'
-                elif field in ['username', 'full_name', 'email', 'role', 'is_active', 'is_mfa_enabled', 'ai_classification_access', 'ghostlayer_access']:
+                elif field in ['username', 'full_name', 'email', 'role', 'is_active', 'is_mfa_enabled', 'ai_classification_access', 'ghostlayer_access', 'ghostlayer_view_original', 'ghostlayer_view_redacted']:
                     pass
                 else:
                     continue
@@ -1676,7 +1696,7 @@ class IDMSDatabase:
         try:
             cursor.execute("""
                 SELECT id, username, full_name, email, role, is_active, is_mfa_enabled, 
-                       mfa_secret, mfa_setup_complete, has_changed_default_password, last_login, created_at, ai_classification_access, ghostlayer_access
+                       mfa_secret, mfa_setup_complete, has_changed_default_password, last_login, created_at, ai_classification_access, ghostlayer_access, ghostlayer_view_original, ghostlayer_view_redacted
                 FROM users WHERE id = ?
             """, (user_id,))
             
@@ -1696,7 +1716,9 @@ class IDMSDatabase:
                     'last_login': user[10],
                     'created_at': user[11],
                     'ai_classification_access': user[12],
-                    'ghostlayer_access': user[13]
+                    'ghostlayer_access': user[13],
+                    'ghostlayer_view_original': user[14],
+                    'ghostlayer_view_redacted': user[15]
                 }
             return None
         except Exception as e:
