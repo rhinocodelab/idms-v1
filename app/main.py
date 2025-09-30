@@ -497,11 +497,19 @@ async def get_system_status():
 
 # Database API endpoints
 @app.get("/api/dashboard-metrics")
-async def get_dashboard_metrics():
-    """Get dashboard metrics from database"""
+async def get_dashboard_metrics(request: Request):
+    """Get personalized dashboard metrics for logged-in user"""
     try:
-        metrics = data_manager.get_dashboard_metrics()
-        return metrics
+        # Get current user
+        user_data = require_auth(request)
+        if not user_data:
+            # Return system-wide metrics if not authenticated (fallback)
+            metrics = data_manager.get_dashboard_metrics()
+            return metrics
+        
+        # Return user-specific metrics
+        user_metrics = db.get_user_dashboard_stats(user_data['id'])
+        return user_metrics
     except Exception as e:
         logger.error(f"Error getting dashboard metrics: {e}")
         return {"error": str(e)}
@@ -537,10 +545,23 @@ async def get_error_logs(limit: int = 20):
         return {"error": str(e)}
 
 @app.get("/api/analytics")
-async def get_analytics_data():
-    """Get comprehensive analytics data for dashboard charts"""
+async def get_analytics_data(request: Request):
+    """Get comprehensive analytics data for dashboard charts (user-specific or all for admin)"""
     try:
-        analytics_data = db.get_analytics_data()
+        # Get current user
+        user_data = require_auth(request)
+        
+        # If admin, show all data. Otherwise, show user-specific data
+        if user_data and user_data.get('role') == 'admin':
+            # Admin sees all documents
+            analytics_data = db.get_analytics_data(user_id=None)
+        elif user_data:
+            # Regular user sees only their own documents
+            analytics_data = db.get_analytics_data(user_id=user_data['id'])
+        else:
+            # Fallback to all data if not authenticated (shouldn't happen)
+            analytics_data = db.get_analytics_data(user_id=None)
+        
         return analytics_data
     except Exception as e:
         logger.error(f"Error getting analytics data: {e}")

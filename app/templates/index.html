@@ -2,8 +2,8 @@
 
 {% block title %}Dashboard - IDMS{% endblock %}
 
-{% block page_title %}Dashboard{% endblock %}
-{% block page_subtitle %}Intelligent Document Management System{% endblock %}
+{% block page_title %}My Dashboard{% endblock %}
+{% block page_subtitle %}Your personal document processing overview{% endblock %}
 
 {% block content %}
 <div class="space-y-6">
@@ -32,104 +32,135 @@
         </div>
     </div>
 
-    <!-- Stats Overview -->
+    <!-- My Statistics Overview -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div class="bg-white  shadow-sm border border-gray-200 p-6">
+        <div class="bg-white shadow-sm border border-gray-200 p-6">
             <div class="flex items-center">
                 <div class="bg-blue-100 p-3 rounded-lg">
                     <i class="fas fa-file-alt text-xl text-blue-600"></i>
                 </div>
                 <div class="ml-4">
-                    <p class="text-sm font-medium text-gray-600">Documents Processed</p>
+                    <p class="text-sm font-medium text-gray-600">My Total Documents</p>
                     <p class="text-2xl font-semibold text-gray-900" id="dashboard-total-docs">--</p>
+                    <p class="text-xs text-gray-500 mt-1">
+                        AI: <span id="dashboard-ai-docs">0</span> | GL: <span id="dashboard-gl-docs">0</span>
+                    </p>
                 </div>
             </div>
         </div>
         
-        <div class="bg-white  shadow-sm border border-gray-200 p-6">
+        <div class="bg-white shadow-sm border border-gray-200 p-6">
             <div class="flex items-center">
                 <div class="bg-green-100 p-3 rounded-lg">
-                    <i class="fas fa-check-circle text-xl text-green-600"></i>
+                    <i class="fas fa-calendar-day text-xl text-green-600"></i>
                 </div>
                 <div class="ml-4">
-                    <p class="text-sm font-medium text-gray-600">Success Rate</p>
+                    <p class="text-sm font-medium text-gray-600">Uploaded Today</p>
+                    <p class="text-2xl font-semibold text-gray-900" id="dashboard-docs-today">--</p>
+                    <p class="text-xs text-gray-500 mt-1">
+                        This week: <span id="dashboard-docs-week">0</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center">
+                <div class="bg-purple-100 p-3 rounded-lg">
+                    <i class="fas fa-check-circle text-xl text-purple-600"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">My Success Rate</p>
                     <p class="text-2xl font-semibold text-gray-900" id="dashboard-success-rate">--</p>
                 </div>
             </div>
         </div>
         
-        <div class="bg-white  shadow-sm border border-gray-200 p-6">
-            <div class="flex items-center">
-                <div class="bg-purple-100 p-3 rounded-lg">
-                    <i class="fas fa-folder text-xl text-purple-600"></i>
-                </div>
-                <div class="ml-4">
-                    <p class="text-sm font-medium text-gray-600">FileNet Uploads</p>
-                    <p class="text-2xl font-semibold text-gray-900" id="dashboard-filenet-uploads">--</p>
-                </div>
-            </div>
-        </div>
-        
-        <div class="bg-white  shadow-sm border border-gray-200 p-6">
+        <div class="bg-white shadow-sm border border-gray-200 p-6">
             <div class="flex items-center">
                 <div class="bg-orange-100 p-3 rounded-lg">
-                    <i class="fas fa-clock text-xl text-orange-600"></i>
+                    <i class="fas fa-hdd text-xl text-orange-600"></i>
                 </div>
                 <div class="ml-4">
-                    <p class="text-sm font-medium text-gray-600">Avg. Process Time</p>
-                    <p class="text-2xl font-semibold text-gray-900" id="dashboard-avg-time">--</p>
+                    <p class="text-sm font-medium text-gray-600">My Storage Used</p>
+                    <p class="text-2xl font-semibold text-gray-900" id="dashboard-storage">--</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Quick Analytics Preview -->
-    <div class="bg-white  shadow-sm border border-gray-200 p-6">
+    <!-- Quick Actions -->
+    <div class="bg-gradient-to-r from-blue-600 to-purple-600 shadow-sm border border-blue-700 p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-semibold text-white mb-2">
+                    <i class="fas fa-bolt mr-2"></i>Quick Actions
+                </h3>
+                <p class="text-sm text-blue-100">Fast access to document upload features</p>
+            </div>
+            <div class="flex items-center space-x-3">
+                <a href="/upload#ai-classification" class="bg-white text-blue-600 px-4 py-2 hover:bg-blue-50 transition-colors inline-flex items-center">
+                    <i class="fas fa-brain mr-2"></i>
+                    AI Classification
+                </a>
+                <a href="/ghostlayer-ai" class="bg-purple-700 text-white px-4 py-2 hover:bg-purple-800 transition-colors inline-flex items-center">
+                    <i class="fas fa-ghost mr-2"></i>
+                    GhostLayer OCR
+                </a>
+                <a href="/analytics" class="bg-blue-700 text-white px-4 py-2 hover:bg-blue-800 transition-colors inline-flex items-center">
+                    <i class="fas fa-chart-line mr-2"></i>
+                    View Analytics
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- My Recent Uploads -->
+    <div class="bg-white shadow-sm border border-gray-200 p-6">
         <div class="flex items-center justify-between mb-6">
-            <h3 class="text-lg font-semibold text-gray-900">Quick Analytics</h3>
+            <h2 class="text-lg font-semibold text-gray-900">
+                <i class="fas fa-history mr-2"></i>My Recent Uploads
+            </h2>
+            <button onclick="refreshRecentUploads()" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                <i class="fas fa-sync-alt mr-1"></i>Refresh
+            </button>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Document</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Source</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Criticality</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Uploaded</th>
+                    </tr>
+                </thead>
+                <tbody id="recent-uploads-table" class="bg-white divide-y divide-gray-200">
+                    <tr>
+                        <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                            <i class="fas fa-spinner fa-spin mr-2"></i>Loading your recent uploads...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- My Document Types -->
+    <div class="bg-white shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-semibold text-gray-900">
+                <i class="fas fa-chart-pie mr-2"></i>My Document Types
+            </h3>
             <a href="/analytics" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
                 View Full Analytics <i class="fas fa-arrow-right ml-1"></i>
             </a>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- Document Types Preview -->
-            <div class="text-center">
-                <h4 class="text-sm font-medium text-gray-600 mb-2">Document Types</h4>
-                <div class="relative h-32">
-                    <canvas id="previewDocTypesChart"></canvas>
-                </div>
-            </div>
-            
-            <!-- Criticality Levels Preview -->
-            <div class="text-center">
-                <h4 class="text-sm font-medium text-gray-600 mb-2">Criticality Levels</h4>
-                <div class="relative h-32">
-                    <canvas id="previewCriticalityChart"></canvas>
-                </div>
-            </div>
-            
-            <!-- Recent Activity -->
-            <div>
-                <h4 class="text-sm font-medium text-gray-600 mb-2">Recent Activity</h4>
-                <div class="space-y-2" id="recent-activity-preview">
-                    <div class="text-center text-gray-500 py-4">
-                        <i class="fas fa-spinner fa-spin mr-2"></i>Loading...
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-
-    <!-- Recent Activity -->
-    <div class="bg-white  shadow-sm border border-gray-200 p-6">
-        <div class="flex items-center justify-between mb-6">
-            <h2 class="text-lg font-semibold text-gray-900">Recent Activity</h2>
-            <a href="/upload" class="text-blue-600 hover:text-blue-800 text-sm font-medium">View All</a>
-        </div>
-        <div class="space-y-4" id="recent-activity-list">
-            <div class="text-center text-gray-500 py-8">
-                <i class="fas fa-spinner fa-spin mr-2"></i>Loading recent activity...
+        <div id="document-types-list" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            <div class="text-center text-gray-500 py-4">
+                <i class="fas fa-spinner fa-spin mr-2"></i>Loading...
             </div>
         </div>
     </div>
@@ -218,202 +249,140 @@
 // Preview chart instances
 let previewDocTypesChart, previewCriticalityChart;
 
-// Load dashboard metrics from database
-function loadDashboardMetrics() {
-    fetch('/api/dashboard-metrics')
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                console.error('Error loading dashboard metrics:', data.error);
-                return;
+// Load personalized dashboard metrics
+async function loadDashboardMetrics() {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/dashboard-metrics', {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
             }
-            
-            document.getElementById('dashboard-total-docs').textContent = data.total_documents || 0;
-            document.getElementById('dashboard-success-rate').textContent = (data.success_rate || 0) + '%';
-            document.getElementById('dashboard-filenet-uploads').textContent = data.filenet_uploads || 0;
-            document.getElementById('dashboard-avg-time').textContent = (data.avg_processing_time || 0) + 's';
-        })
-        .catch(error => {
-            console.error('Error loading dashboard metrics:', error);
         });
-}
-
-// Load analytics data for preview charts
-function loadAnalyticsPreview() {
-    fetch('/api/analytics')
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                console.error('Error loading analytics:', data.error);
-                return;
-            }
-            
-            updatePreviewCharts(data);
-            updateRecentActivityPreview(data);
-        })
-        .catch(error => {
-            console.error('Error loading analytics data:', error);
-        });
-}
-
-// Update preview charts
-function updatePreviewCharts(data) {
-    // Document Types Preview Chart
-    const docTypesCtx = document.getElementById('previewDocTypesChart').getContext('2d');
-    if (previewDocTypesChart) {
-        previewDocTypesChart.destroy();
-    }
-    
-    const docTypesLabels = data.document_types?.slice(0, 3).map(item => item.name) || ['PDF', 'Word', 'Excel'];
-    const docTypesValues = data.document_types?.slice(0, 3).map(item => item.count) || [10, 8, 5];
-    
-    previewDocTypesChart = new Chart(docTypesCtx, {
-        type: 'doughnut',
-        data: {
-            labels: docTypesLabels,
-            datasets: [{
-                data: docTypesValues,
-                backgroundColor: ['#3B82F6', '#EF4444', '#10B981'],
-                borderWidth: 2,
-                borderColor: '#fff'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            }
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            console.error('Error loading dashboard metrics:', data.error);
+            return;
         }
-    });
-    
-    // Criticality Levels Preview Chart
-    const criticalityCtx = document.getElementById('previewCriticalityChart').getContext('2d');
-    if (previewCriticalityChart) {
-        previewCriticalityChart.destroy();
+        
+        // Update KPI cards with user-specific data
+        document.getElementById('dashboard-total-docs').textContent = data.total_documents || 0;
+        document.getElementById('dashboard-ai-docs').textContent = data.total_ai_documents || 0;
+        document.getElementById('dashboard-gl-docs').textContent = data.total_ghostlayer_documents || 0;
+        document.getElementById('dashboard-docs-today').textContent = data.documents_today || 0;
+        document.getElementById('dashboard-docs-week').textContent = data.documents_this_week || 0;
+        document.getElementById('dashboard-success-rate').textContent = (data.success_rate || 0) + '%';
+        
+        // Format storage
+        const storageMB = ((data.total_storage || 0) / 1024 / 1024).toFixed(2);
+        document.getElementById('dashboard-storage').textContent = storageMB + ' MB';
+        
+        // Load document types
+        loadDocumentTypes(data.document_types || []);
+        
+        // Load recent uploads
+        loadRecentUploads(data.recent_uploads || []);
+        
+    } catch (error) {
+        console.error('Error loading dashboard metrics:', error);
     }
-    
-    const criticalityLabels = data.criticality_levels?.slice(0, 4).map(item => item.name) || ['Public', 'Confidential', 'Restricted', 'Classified'];
-    const criticalityValues = data.criticality_levels?.slice(0, 4).map(item => item.count) || [15, 10, 5, 2];
-    
-    previewCriticalityChart = new Chart(criticalityCtx, {
-        type: 'bar',
-        data: {
-            labels: criticalityLabels,
-            datasets: [{
-                data: criticalityValues,
-                backgroundColor: ['#10B981', '#F59E0B', '#EF4444', '#6B7280'],
-                borderColor: ['#10B981', '#F59E0B', '#EF4444', '#6B7280'],
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    display: false
-                },
-                x: {
-                    display: false
-                }
-            }
-        }
-    });
 }
 
-// Update recent activity preview
-function updateRecentActivityPreview(data) {
-    const container = document.getElementById('recent-activity-preview');
-    if (!container) return;
+// Load user's document types
+function loadDocumentTypes(types) {
+    const container = document.getElementById('document-types-list');
     
-    // For now, show a simple summary
-    container.innerHTML = `
-        <div class="text-sm text-gray-600 space-y-1">
-            <div class="flex justify-between">
-                <span>Processed Today:</span>
-                <span class="font-medium">${data.processed_today || 0}</span>
-            </div>
-            <div class="flex justify-between">
-                <span>Success Rate:</span>
-                <span class="font-medium text-green-600">${(100 - (data.error_rate || 0)).toFixed(1)}%</span>
-            </div>
-            <div class="flex justify-between">
-                <span>Avg Time:</span>
-                <span class="font-medium">${data.avg_processing_time || 0}s</span>
-            </div>
-        </div>
-    `;
-}
-
-// Load recent documents and update activity list
-function loadRecentDocuments() {
-    fetch('/api/recent-documents?limit=5')
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                console.error('Error loading recent documents:', data.error);
-                updateRecentActivityList([]);
-                return;
-            }
-            
-            updateRecentActivityList(data);
-        })
-        .catch(error => {
-            console.error('Error loading recent documents:', error);
-            updateRecentActivityList([]);
-        });
-}
-
-// Update recent activity list with real data
-function updateRecentActivityList(documents) {
-    const container = document.getElementById('recent-activity-list');
-    if (!container) return;
-    
-    if (documents.length === 0) {
+    if (types.length === 0) {
         container.innerHTML = `
-            <div class="text-center text-gray-500 py-8">
-                <i class="fas fa-inbox mr-2"></i>
-                No recent activity
+            <div class="col-span-full text-center text-gray-500 py-4">
+                <i class="fas fa-inbox mr-2"></i>No documents uploaded yet
             </div>
         `;
         return;
     }
     
-    container.innerHTML = documents.map(doc => {
-        // Get file icon based on file type
-        const fileIcon = getFileIcon(doc.file_type);
-        const iconColor = getFileIconColor(doc.file_type);
+    container.innerHTML = types.map(type => `
+        <div class="bg-gradient-to-br from-blue-50 to-purple-50 border border-blue-200 p-4 text-center hover:shadow-md transition-shadow">
+            <div class="text-2xl font-bold text-blue-600 mb-1">${type.count}</div>
+            <div class="text-xs text-gray-700 font-medium truncate" title="${type.name}">${type.name}</div>
+        </div>
+    `).join('');
+}
+
+// Load user's recent uploads
+function loadRecentUploads(uploads) {
+    const tbody = document.getElementById('recent-uploads-table');
+    
+    if (uploads.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                    <i class="fas fa-inbox mr-2"></i>No uploads yet. Start by uploading your first document!
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = uploads.map(doc => {
+        const statusClass = {
+            'completed': 'bg-green-100 text-green-800',
+            'pending': 'bg-yellow-100 text-yellow-800',
+            'processing': 'bg-blue-100 text-blue-800',
+            'failed': 'bg-red-100 text-red-800'
+        }[doc.status] || 'bg-gray-100 text-gray-800';
         
-        // Format the activity description
-        const description = doc.processing_timestamp 
-            ? `Classified as ${doc.document_type} - ${doc.criticality_level} level`
-            : `Uploaded - Processing pending`;
+        const sourceClass = doc.source === 'AI Classification' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800';
+        const sourceIcon = doc.source === 'AI Classification' ? 'fa-brain' : 'fa-ghost';
         
-        // Calculate time ago
-        const timeAgo = getTimeAgo(doc.created_at);
+        const criticalityBadge = doc.criticality ? `
+            <span class="px-2 py-1 text-xs font-semibold rounded-full ${getCriticalityClass(doc.criticality)}">
+                ${doc.criticality}
+            </span>
+        ` : '<span class="text-gray-400 text-xs">N/A</span>';
+        
+        const timeAgo = getTimeAgo(doc.timestamp);
+        const sizeMB = ((doc.size || 0) / 1024 / 1024).toFixed(2);
         
         return `
-            <div class="flex items-center space-x-4 p-4 bg-gray-50 ">
-                <div class="${iconColor} p-2 ">
-                    <i class="${fileIcon}"></i>
-                </div>
-                <div class="flex-1">
-                    <p class="font-medium text-gray-900">${doc.filename}</p>
-                    <p class="text-sm text-gray-600">${description}</p>
-                </div>
-                <span class="text-xs text-gray-500">${timeAgo}</span>
-            </div>
+            <tr class="hover:bg-gray-50">
+                <td class="px-4 py-3">
+                    <div class="text-sm font-medium text-gray-900">${doc.name}</div>
+                    <div class="text-xs text-gray-500">${sizeMB} MB</div>
+                </td>
+                <td class="px-4 py-3 text-sm text-gray-700">${doc.type || 'Unknown'}</td>
+                <td class="px-4 py-3">
+                    <span class="px-2 py-1 text-xs font-semibold rounded-full ${sourceClass}">
+                        <i class="fas ${sourceIcon} mr-1"></i>${doc.source}
+                    </span>
+                </td>
+                <td class="px-4 py-3">${criticalityBadge}</td>
+                <td class="px-4 py-3">
+                    <span class="px-2 py-1 text-xs font-semibold rounded-full ${statusClass}">
+                        ${doc.status}
+                    </span>
+                </td>
+                <td class="px-4 py-3 text-xs text-gray-500">${timeAgo}</td>
+            </tr>
         `;
     }).join('');
+}
+
+function getCriticalityClass(criticality) {
+    const classes = {
+        'Public': 'bg-green-100 text-green-800',
+        'Confidential': 'bg-yellow-100 text-yellow-800',
+        'Restricted': 'bg-orange-100 text-orange-800',
+        'Top Secret': 'bg-red-100 text-red-800',
+        'Classified': 'bg-purple-100 text-purple-800'
+    };
+    return classes[criticality] || 'bg-gray-100 text-gray-800';
+}
+
+function refreshRecentUploads() {
+    loadDashboardMetrics();
 }
 
 // Get appropriate file icon based on file type
@@ -485,13 +454,10 @@ function getTimeAgo(timestamp) {
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', function() {
     loadDashboardMetrics();
-    loadAnalyticsPreview();
-    loadRecentDocuments();
     
     // Refresh metrics every 30 seconds
     setInterval(() => {
         loadDashboardMetrics();
-        loadAnalyticsPreview();
     }, 30000);
 
     // Check if user needs to change password

@@ -607,76 +607,170 @@ class IDMSDatabase:
             'total_categories': total_categories
         }
     
-    def get_analytics_data(self) -> Dict:
-        """Get comprehensive analytics data for dashboard"""
+    def get_analytics_data(self, user_id: int = None) -> Dict:
+        """Get comprehensive analytics data for dashboard (includes AI + GhostLayer)"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
-        # Total documents processed today
-        cursor.execute("""
-            SELECT COUNT(*) FROM documents 
-            WHERE DATE(upload_timestamp) = DATE('now')
+        # Build WHERE clause for user filtering
+        user_filter_ai = f"WHERE user_id = {user_id}" if user_id else ""
+        user_filter_gl = f"WHERE user_id = {user_id}" if user_id else ""
+        
+        # Total documents processed today (AI + GhostLayer)
+        cursor.execute(f"""
+            SELECT COUNT(*) FROM ai_document_classifications 
+            {user_filter_ai} {'AND' if user_id else 'WHERE'} DATE(upload_timestamp) = DATE('now')
         """)
-        processed_today = cursor.fetchone()[0]
+        ai_today = cursor.fetchone()[0]
         
-        # Error rate calculation
-        cursor.execute("SELECT COUNT(*) FROM processing_logs WHERE status = 'failed'")
-        failed_processing = cursor.fetchone()[0]
+        cursor.execute(f"""
+            SELECT COUNT(*) FROM user_ghostlayer_documents 
+            {user_filter_gl} {'AND' if user_id else 'WHERE'} DATE(upload_timestamp) = DATE('now')
+        """)
+        gl_today = cursor.fetchone()[0]
         
-        cursor.execute("SELECT COUNT(*) FROM processing_logs")
-        total_processing = cursor.fetchone()[0]
+        processed_today = ai_today + gl_today
         
-        error_rate = (failed_processing / total_processing * 100) if total_processing > 0 else 0
+        # Total documents
+        cursor.execute(f"""
+            SELECT COUNT(*) FROM ai_document_classifications 
+            {user_filter_ai}
+        """)
+        total_ai = cursor.fetchone()[0]
         
-        # Document types distribution
-        cursor.execute("""
+        cursor.execute(f"""
+            SELECT COUNT(*) FROM user_ghostlayer_documents 
+            {user_filter_gl}
+        """)
+        total_gl = cursor.fetchone()[0]
+        
+        total_documents = total_ai + total_gl
+        
+        # Error rate calculation (AI + GhostLayer)
+        cursor.execute(f"""
+            SELECT COUNT(*) FROM ai_document_classifications 
+            {user_filter_ai} {'AND' if user_id else 'WHERE'} processing_status = 'failed'
+        """)
+        ai_failed = cursor.fetchone()[0]
+        
+        cursor.execute(f"""
+            SELECT COUNT(*) FROM user_ghostlayer_documents 
+            {user_filter_gl} {'AND' if user_id else 'WHERE'} processing_status = 'failed'
+        """)
+        gl_failed = cursor.fetchone()[0]
+        
+        total_failed = ai_failed + gl_failed
+        error_rate = (total_failed / total_documents * 100) if total_documents > 0 else 0
+        
+        # Document types distribution (AI + GhostLayer combined)
+        cursor.execute(f"""
             SELECT document_type, COUNT(*) as count 
-            FROM documents 
-            WHERE document_type IS NOT NULL AND document_type != 'Unknown'
-            GROUP BY document_type 
-            ORDER BY count DESC
+            FROM ai_document_classifications 
+            {user_filter_ai} {'AND' if user_id else 'WHERE'} document_type IS NOT NULL AND document_type != 'Unknown'
+            GROUP BY document_type
         """)
-        document_types = cursor.fetchall()
+        ai_types = cursor.fetchall()
         
-        # Criticality levels distribution
-        cursor.execute("""
+        cursor.execute(f"""
+            SELECT document_type, COUNT(*) as count 
+            FROM user_ghostlayer_documents 
+            {user_filter_gl} {'AND' if user_id else 'WHERE'} document_type IS NOT NULL AND document_type != 'Unknown'
+            GROUP BY document_type
+        """)
+        gl_types = cursor.fetchall()
+        
+        # Combine document types
+        type_counts = {}
+        for row in ai_types + gl_types:
+            type_counts[row[0]] = type_counts.get(row[0], 0) + row[1]
+        
+        document_types = [{'name': k, 'count': v} for k, v in sorted(type_counts.items(), key=lambda x: x[1], reverse=True)]
+        
+        # Criticality levels distribution (AI only - GhostLayer doesn't have criticality)
+        cursor.execute(f"""
             SELECT criticality_level, COUNT(*) as count 
-            FROM documents 
-            WHERE criticality_level IS NOT NULL AND criticality_level != 'Unknown'
+            FROM ai_document_classifications 
+            {user_filter_ai} {'AND' if user_id else 'WHERE'} criticality_level IS NOT NULL AND criticality_level != 'Unknown'
             GROUP BY criticality_level 
             ORDER BY count DESC
         """)
-        criticality_levels = cursor.fetchall()
+        criticality_levels = [{'name': row[0], 'count': row[1]} for row in cursor.fetchall()]
         
-        # Processing trends (last 30 days)
-        cursor.execute("""
+        # Processing trends (last 30 days) - AI + GhostLayer combined
+        cursor.execute(f"""
             SELECT DATE(upload_timestamp) as date, COUNT(*) as count
-            FROM documents 
-            WHERE upload_timestamp >= datetime('now', '-30 days')
+            FROM ai_document_classifications 
+            {user_filter_ai} {'AND' if user_id else 'WHERE'} upload_timestamp >= datetime('now', '-30 days')
             GROUP BY DATE(upload_timestamp)
-            ORDER BY date ASC
         """)
-        processing_trends = cursor.fetchall()
+        ai_trends = cursor.fetchall()
         
-        # File types distribution
-        cursor.execute("""
-            SELECT file_type, COUNT(*) as count 
-            FROM documents 
-            WHERE file_type IS NOT NULL AND file_type != ''
-            GROUP BY file_type 
-            ORDER BY count DESC
+        cursor.execute(f"""
+            SELECT DATE(upload_timestamp) as date, COUNT(*) as count
+            FROM user_ghostlayer_documents 
+            {user_filter_gl} {'AND' if user_id else 'WHERE'} upload_timestamp >= datetime('now', '-30 days')
+            GROUP BY DATE(upload_timestamp)
         """)
-        file_types = cursor.fetchall()
+        gl_trends = cursor.fetchall()
+        
+        # Combine trends by date
+        trend_counts = {}
+        for row in ai_trends + gl_trends:
+            trend_counts[row[0]] = trend_counts.get(row[0], 0) + row[1]
+        
+        processing_trends = [{'date': k, 'count': v} for k, v in sorted(trend_counts.items())]
+        
+        # File types distribution (AI + GhostLayer)
+        cursor.execute(f"""
+            SELECT file_type, COUNT(*) as count 
+            FROM ai_document_classifications 
+            {user_filter_ai} {'AND' if user_id else 'WHERE'} file_type IS NOT NULL AND file_type != ''
+            GROUP BY file_type
+        """)
+        ai_file_types = cursor.fetchall()
+        
+        cursor.execute(f"""
+            SELECT document_format, COUNT(*) as count 
+            FROM user_ghostlayer_documents 
+            {user_filter_gl} {'AND' if user_id else 'WHERE'} document_format IS NOT NULL AND document_format != ''
+            GROUP BY document_format
+        """)
+        gl_file_types = cursor.fetchall()
+        
+        # Combine file types
+        file_type_counts = {}
+        for row in ai_file_types + gl_file_types:
+            file_type_counts[row[0]] = file_type_counts.get(row[0], 0) + row[1]
+        
+        file_types = [{'name': k, 'count': v} for k, v in sorted(file_type_counts.items(), key=lambda x: x[1], reverse=True)]
+        
+        # GhostLayer specific stats
+        cursor.execute(f"""
+            SELECT COUNT(*) FROM user_ghostlayer_documents 
+            {user_filter_gl}
+        """)
+        ghostlayer_count = cursor.fetchone()[0]
+        
+        # AI Classification specific stats
+        cursor.execute(f"""
+            SELECT COUNT(*) FROM ai_document_classifications 
+            {user_filter_ai}
+        """)
+        ai_classification_count = cursor.fetchone()[0]
         
         conn.close()
         
         return {
+            'total_documents': total_documents,
+            'ai_documents': ai_classification_count,
+            'ghostlayer_documents': ghostlayer_count,
             'processed_today': processed_today,
             'error_rate': round(error_rate, 1),
-            'document_types': [{'name': row[0], 'count': row[1]} for row in document_types],
-            'criticality_levels': [{'name': row[0], 'count': row[1]} for row in criticality_levels],
-            'processing_trends': [{'date': row[0], 'count': row[1]} for row in processing_trends],
-            'file_types': [{'name': row[0], 'count': row[1]} for row in file_types]
+            'success_rate': round(100 - error_rate, 1),
+            'document_types': document_types,
+            'criticality_levels': criticality_levels,
+            'processing_trends': processing_trends,
+            'file_types': file_types
         }
     
     # Error Logging
@@ -1577,6 +1671,173 @@ class IDMSDatabase:
             return False
         finally:
             conn.close()
+
+    def get_user_dashboard_stats(self, user_id: int) -> Dict:
+        """Get personalized dashboard statistics for a specific user"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        # Total AI documents for user
+        cursor.execute("""
+            SELECT COUNT(*) FROM ai_document_classifications 
+            WHERE user_id = ?
+        """, (user_id,))
+        total_ai_docs = cursor.fetchone()[0]
+        
+        # Total GhostLayer documents for user
+        cursor.execute("""
+            SELECT COUNT(*) FROM user_ghostlayer_documents 
+            WHERE user_id = ?
+        """, (user_id,))
+        total_gl_docs = cursor.fetchone()[0]
+        
+        # Documents uploaded today (AI)
+        cursor.execute("""
+            SELECT COUNT(*) FROM ai_document_classifications 
+            WHERE user_id = ? AND DATE(upload_timestamp) = DATE('now')
+        """, (user_id,))
+        ai_docs_today = cursor.fetchone()[0]
+        
+        # Documents uploaded today (GhostLayer)
+        cursor.execute("""
+            SELECT COUNT(*) FROM user_ghostlayer_documents 
+            WHERE user_id = ? AND DATE(upload_timestamp) = DATE('now')
+        """, (user_id,))
+        gl_docs_today = cursor.fetchone()[0]
+        
+        # Documents uploaded this week (AI)
+        cursor.execute("""
+            SELECT COUNT(*) FROM ai_document_classifications 
+            WHERE user_id = ? AND DATE(upload_timestamp) >= DATE('now', '-7 days')
+        """, (user_id,))
+        ai_docs_week = cursor.fetchone()[0]
+        
+        # Documents uploaded this week (GhostLayer)
+        cursor.execute("""
+            SELECT COUNT(*) FROM user_ghostlayer_documents 
+            WHERE user_id = ? AND DATE(upload_timestamp) >= DATE('now', '-7 days')
+        """, (user_id,))
+        gl_docs_week = cursor.fetchone()[0]
+        
+        # User's success rate (AI documents)
+        cursor.execute("""
+            SELECT COUNT(*) FROM ai_document_classifications 
+            WHERE user_id = ? AND processing_status = 'completed'
+        """, (user_id,))
+        successful_ai = cursor.fetchone()[0]
+        
+        # User's success rate (GhostLayer)
+        cursor.execute("""
+            SELECT COUNT(*) FROM user_ghostlayer_documents 
+            WHERE user_id = ? AND processing_status = 'completed'
+        """, (user_id,))
+        successful_gl = cursor.fetchone()[0]
+        
+        total_docs = total_ai_docs + total_gl_docs
+        total_successful = successful_ai + successful_gl
+        success_rate = (total_successful / total_docs * 100) if total_docs > 0 else 0
+        
+        # User's storage (AI documents)
+        cursor.execute("""
+            SELECT SUM(file_size) FROM ai_document_classifications 
+            WHERE user_id = ?
+        """, (user_id,))
+        ai_storage = cursor.fetchone()[0] or 0
+        
+        # User's storage (GhostLayer)
+        cursor.execute("""
+            SELECT SUM(document_size) FROM user_ghostlayer_documents 
+            WHERE user_id = ?
+        """, (user_id,))
+        gl_storage = cursor.fetchone()[0] or 0
+        
+        # User's document types (AI)
+        cursor.execute("""
+            SELECT document_type, COUNT(*) 
+            FROM ai_document_classifications 
+            WHERE user_id = ?
+            GROUP BY document_type
+            ORDER BY COUNT(*) DESC
+            LIMIT 10
+        """, (user_id,))
+        ai_doc_types = [{'name': row[0], 'count': row[1]} for row in cursor.fetchall()]
+        
+        # User's document types (GhostLayer)
+        cursor.execute("""
+            SELECT document_type, COUNT(*) 
+            FROM user_ghostlayer_documents 
+            WHERE user_id = ?
+            GROUP BY document_type
+            ORDER BY COUNT(*) DESC
+            LIMIT 10
+        """, (user_id,))
+        gl_doc_types = [{'name': row[0], 'count': row[1]} for row in cursor.fetchall()]
+        
+        # Combine and aggregate document types
+        type_counts = {}
+        for item in ai_doc_types + gl_doc_types:
+            type_counts[item['name']] = type_counts.get(item['name'], 0) + item['count']
+        
+        combined_types = [{'name': k, 'count': v} for k, v in sorted(type_counts.items(), key=lambda x: x[1], reverse=True)][:10]
+        
+        # User's recent uploads (combined AI + GhostLayer)
+        recent_uploads = []
+        
+        # Get AI documents
+        cursor.execute("""
+            SELECT 'AI Classification' as source, original_filename as name, document_type, 
+                   upload_timestamp, processing_status, criticality_level, file_size
+            FROM ai_document_classifications 
+            WHERE user_id = ?
+            ORDER BY upload_timestamp DESC
+            LIMIT 10
+        """, (user_id,))
+        ai_recent = cursor.fetchall()
+        
+        # Get GhostLayer documents
+        cursor.execute("""
+            SELECT 'GhostLayer AI' as source, document_name as name, document_type, 
+                   upload_timestamp, processing_status, NULL as criticality, document_size
+            FROM user_ghostlayer_documents 
+            WHERE user_id = ?
+            ORDER BY upload_timestamp DESC
+            LIMIT 10
+        """, (user_id,))
+        gl_recent = cursor.fetchall()
+        
+        # Combine and sort by timestamp
+        all_recent = list(ai_recent) + list(gl_recent)
+        all_recent.sort(key=lambda x: x[3], reverse=True)
+        
+        recent_uploads = [
+            {
+                'source': row[0],
+                'name': row[1],
+                'type': row[2],
+                'timestamp': row[3],
+                'status': row[4],
+                'criticality': row[5],
+                'size': row[6]
+            } for row in all_recent[:10]
+        ]
+        
+        conn.close()
+        
+        return {
+            'total_documents': total_docs,
+            'total_ai_documents': total_ai_docs,
+            'total_ghostlayer_documents': total_gl_docs,
+            'documents_today': ai_docs_today + gl_docs_today,
+            'ai_docs_today': ai_docs_today,
+            'gl_docs_today': gl_docs_today,
+            'documents_this_week': ai_docs_week + gl_docs_week,
+            'success_rate': round(success_rate, 1),
+            'total_storage': ai_storage + gl_storage,
+            'ai_storage': ai_storage,
+            'gl_storage': gl_storage,
+            'document_types': combined_types,
+            'recent_uploads': recent_uploads
+        }
 
 # Global database instance
 db = IDMSDatabase()
