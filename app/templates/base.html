@@ -174,22 +174,16 @@
                         <i class="fas fa-ghost mr-3"></i>
                         <span>GhostLayer AI</span>
                     </a>
-                    <!-- API Endpoint - Admin Only -->
-                    <div id="api-endpoint-menu" class="hidden">
-                        <a href="/docs" target="_blank" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white mb-2 transition-colors duration-200">
-                            <i class="fas fa-cogs mr-3"></i>
-                            <span>API Endpoint</span>
-                        </a>
-                    </div>
                     <a href="/analytics" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white mb-2 transition-colors duration-200 {% if request.url.path == '/analytics' %}bg-gray-800 text-white{% endif %}">
                         <i class="fas fa-chart-line mr-3"></i>
                         <span>Analytics</span>
                     </a>
-                    <!-- Database - Admin Only -->
-                    <div id="database-menu" class="hidden">
-                        <a href="/admin" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white mb-2 transition-colors duration-200 {% if request.url.path == '/admin' %}bg-gray-800 text-white{% endif %}">
-                            <i class="fas fa-database mr-3"></i>
-                            <span>Database</span>
+                    
+                    <!-- ACCE Console (Administration Console for Content Platform Engine) - Admin Only -->
+                    <div id="acce-console-menu" class="hidden">
+                        <a href="https://win-1gpq0nalnpb:9443/acce/login.jsp" target="_blank" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white mb-2 transition-colors duration-200" title="Administration Console for Content Platform Engine">
+                            <i class="fas fa-external-link-alt mr-3"></i>
+                            <span>ACCE Console</span>
                         </a>
                     </div>
                 </div>
@@ -606,17 +600,14 @@
                 
                 // Show/hide admin-only menus based on role
                 const userManagementMenu = document.getElementById('user-management-menu');
-                const apiEndpointMenu = document.getElementById('api-endpoint-menu');
-                const databaseMenu = document.getElementById('database-menu');
+                const acceConsoleMenu = document.getElementById('acce-console-menu');
                 
                 if (userData.role === 'admin') {
-                    userManagementMenu.classList.remove('hidden');
-                    apiEndpointMenu.classList.remove('hidden');
-                    databaseMenu.classList.remove('hidden');
+                    if (userManagementMenu) userManagementMenu.classList.remove('hidden');
+                    if (acceConsoleMenu) acceConsoleMenu.classList.remove('hidden');
                 } else {
-                    userManagementMenu.classList.add('hidden');
-                    apiEndpointMenu.classList.add('hidden');
-                    databaseMenu.classList.add('hidden');
+                    if (userManagementMenu) userManagementMenu.classList.add('hidden');
+                    if (acceConsoleMenu) acceConsoleMenu.classList.add('hidden');
                 }
                 
                 return true;
@@ -660,12 +651,16 @@
                     document.getElementById('user-name').textContent = userData.full_name || userData.username;
                     document.getElementById('user-role').textContent = userData.role.charAt(0).toUpperCase() + userData.role.slice(1);
                     
-                    // Show/hide User Management menu based on role
+                    // Show/hide admin-only menus based on role
                     const userManagementMenu = document.getElementById('user-management-menu');
+                    const acceConsoleMenu = document.getElementById('acce-console-menu');
+                    
                     if (userData.role === 'admin') {
-                        userManagementMenu.classList.remove('hidden');
+                        if (userManagementMenu) userManagementMenu.classList.remove('hidden');
+                        if (acceConsoleMenu) acceConsoleMenu.classList.remove('hidden');
                     } else {
-                        userManagementMenu.classList.add('hidden');
+                        if (userManagementMenu) userManagementMenu.classList.add('hidden');
+                        if (acceConsoleMenu) acceConsoleMenu.classList.add('hidden');
                     }
                     
                     // Show password change notification if user hasn't changed default password
