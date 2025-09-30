@@ -979,6 +979,43 @@ class IDMSDatabase:
             conn.close()
             return False
     
+    def delete_ai_document_classification(self, document_id: int) -> bool:
+        """Delete an AI Document Classification and its associated file"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        try:
+            # Get document info before deletion to clean up file
+            cursor.execute("""
+                SELECT file_path FROM ai_document_classifications WHERE id = ?
+            """, (document_id,))
+            
+            row = cursor.fetchone()
+            file_path = row[0] if row else None
+            
+            # Delete from database
+            cursor.execute("""
+                DELETE FROM ai_document_classifications WHERE id = ?
+            """, (document_id,))
+            
+            conn.commit()
+            success = cursor.rowcount > 0
+            conn.close()
+            
+            # Delete physical file if it exists
+            if success and file_path and os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                    logger.info(f"Deleted file: {file_path}")
+                except Exception as e:
+                    logger.error(f"Error deleting file {file_path}: {e}")
+            
+            return success
+        except Exception as e:
+            logger.error(f"Error deleting AI document classification {document_id}: {e}")
+            conn.close()
+            return False
+    
     # User GhostLayer Documents Operations
     def insert_user_ghostlayer_document(self, document_data: Dict) -> int:
         """Insert a new user GhostLayer document record"""

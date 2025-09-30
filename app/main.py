@@ -1514,6 +1514,39 @@ async def get_user_ai_documents(request: Request, page: int = 1, limit: int = 10
         logger.error(f"Error fetching user AI documents: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch documents")
 
+@app.delete("/api/ai-documents/{document_id}")
+async def delete_ai_document(request: Request, document_id: int):
+    """Delete an AI Document Classification (user can delete own, admin can delete any)"""
+    try:
+        current_user = require_auth(request)
+        if not current_user:
+            raise HTTPException(status_code=401, detail="Authentication required")
+        
+        # Get the document to check ownership
+        document = db.get_ai_document_classification_by_id(document_id)
+        if not document:
+            raise HTTPException(status_code=404, detail="Document not found")
+        
+        # Check permissions: user can delete own documents, admin can delete any
+        user_role = current_user.get('role', 'viewer')
+        if user_role != 'admin' and document['user_id'] != current_user['id']:
+            raise HTTPException(status_code=403, detail="You don't have permission to delete this document")
+        
+        # Delete the document
+        success = db.delete_ai_document_classification(document_id)
+        
+        if success:
+            logger.info(f"AI document {document_id} deleted by user {current_user['username']}")
+            return {"message": "Document deleted successfully", "document_id": document_id}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to delete document")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting AI document {document_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete document")
+
 @app.get("/api/user-ghostlayer-documents")
 async def get_user_ghostlayer_documents(request: Request, page: int = 1, limit: int = 10):
     """Get user-specific GhostLayer documents with pagination (or all documents if admin)"""
