@@ -689,6 +689,20 @@
                         if (acceConsoleMenu) acceConsoleMenu.classList.add('hidden');
                     }
                     
+                    // Show/hide module access based on user permissions
+                    const uploadMenu = document.querySelector('button[onclick="toggleUploadMenu()"]').parentElement;
+                    const ghostlayerMenu = document.querySelector('a[href="/ghostlayer-ai"]');
+                    
+                    // Hide Upload Documents menu if user doesn't have AI Classification access
+                    if (!userData.ai_classification_access && uploadMenu) {
+                        uploadMenu.style.display = 'none';
+                    }
+                    
+                    // Hide GhostLayer AI menu if user doesn't have GhostLayer access
+                    if (!userData.ghostlayer_access && ghostlayerMenu) {
+                        ghostlayerMenu.style.display = 'none';
+                    }
+                    
                     // Show password change notification if user hasn't changed default password
                     if (userData.has_changed_default_password === false) {
                         showPasswordChangeNotification();

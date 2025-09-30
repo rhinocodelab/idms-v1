@@ -2715,6 +2715,8 @@ async def create_user(request: Request):
             role=data.get("role", "analyst"),
             is_active=data.get("is_active", True),
             is_mfa_enabled=data.get("mfa_enabled", False),
+            ai_classification_access=data.get("ai_classification_access", True),
+            ghostlayer_access=data.get("ghostlayer_access", True),
             created_by=user.get("id")
         )
         
