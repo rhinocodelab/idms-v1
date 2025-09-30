@@ -1818,7 +1818,7 @@ async def identify_document(
         
         # Update the existing record with OCR results
         update_data = {
-            "document_type": document_type,
+            "document_type": document_name,  # Use document_name (e.g., "Voter ID Card") not document_type (e.g., "voter_id")
             "coordinates_json_path": coordinates_json_path,
             "processing_status": "completed",
             "ai_analysis_result": str(ai_result)

@@ -74,11 +74,28 @@
           "voter id",
           "voter identification",
           "election commission",
+          "election commission of india",
+          "भारत निर्वाचन आयोग",
+          "निर्वाचन आयोग",
+          "elector photo identity card",
+          "identity card",
+          "मतदाता फोटो पहचान पत्र",
+          "मतदाता पहचान पत्र",
+          "मतदाता",
+          "epic",
+          "epic no",
+          "epic number",
           "voting card",
           "electoral roll",
-          "voter number"
+          "voter number",
+          "elector card",
+          "elector identity",
+          "elector",
+          "elector's name",
+          "voter photo",
+          "मतदाता फोटो"
         ],
-        "confidence_threshold": 0.3
+        "confidence_threshold": 0.1
       },
       "bank_statement": {
         "name": "Bank Statement",
