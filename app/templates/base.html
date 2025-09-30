@@ -241,20 +241,43 @@
                     </div>
 
                     <!-- User Info and Actions -->
-                    <div class="flex items-center space-x-4">
-                        <div class="text-right">
-                            <p class="text-sm font-medium text-gray-900" id="user-name">Loading...</p>
-                            <p class="text-xs text-gray-500" id="user-role">Loading...</p>
+                    <div class="flex items-center">
+                        <!-- Profile Card Button with Avatar -->
+                        <div class="relative">
+                            <button onclick="toggleProfileDropdown()" 
+                                    class="flex items-center space-x-3 bg-gray-100 hover:bg-gray-200 px-4 py-2 transition-colors border border-gray-300">
+                                <!-- Avatar with Initials -->
+                                <div id="user-avatar" class="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-semibold text-sm">
+                                    --
+                                </div>
+                                <!-- User Info -->
+                                <div class="text-left">
+                                    <p class="text-sm font-medium text-gray-900" id="user-name">Loading...</p>
+                                    <p class="text-xs text-gray-500" id="user-role">Loading...</p>
+                                </div>
+                                <!-- Dropdown Icon -->
+                                <i id="profile-dropdown-icon" class="fas fa-chevron-down text-gray-500 text-xs"></i>
+                            </button>
+                            
+                            <!-- Profile Dropdown Menu -->
+                            <div id="profile-dropdown" class="hidden absolute right-0 mt-2 w-56 bg-white shadow-lg border border-gray-200 z-50">
+                                <div class="py-1">
+                                    <a href="#" onclick="showUserProfile(); return false;" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        <i class="fas fa-user mr-3 text-gray-400"></i>
+                                        View Profile
+                                    </a>
+                                    <a href="#" onclick="showPasswordChangeModal(); return false;" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        <i class="fas fa-key mr-3 text-gray-400"></i>
+                                        Change Password
+                                    </a>
+                                    <div class="border-t border-gray-200 my-1"></div>
+                                    <a href="#" onclick="logout(); return false;" class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                                        <i class="fas fa-sign-out-alt mr-3"></i>
+                                        Logout
+                                    </a>
+                                </div>
+                            </div>
                         </div>
-                        
-                        <!-- User Profile Button -->
-                        <button onclick="showUserProfile()" class="bg-blue-600 text-white px-3 py-2 hover:bg-blue-700 transition-colors text-sm">
-                            <i class="fas fa-user mr-1"></i>Profile
-                        </button>
-                        
-                        <button onclick="logout()" class="bg-red-600 text-white px-3 py-2 hover:bg-red-700 transition-colors text-sm">
-                            <i class="fas fa-sign-out-alt mr-1"></i>Logout
-                        </button>
                     </div>
 
                 </div>
@@ -362,98 +385,40 @@
         <div class="flex items-center justify-center min-h-screen p-4">
             <div class="bg-white shadow-xl max-w-md w-full rounded-lg">
                 <div class="px-6 py-4 border-b border-gray-200">
-                    <h3 class="text-lg font-semibold text-gray-900">
-                        <i class="fas fa-user mr-2 text-blue-600"></i>User Profile
-                    </h3>
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-gray-900">
+                            <i class="fas fa-user mr-2 text-blue-600"></i>User Profile
+                        </h3>
+                        <button onclick="hideUserProfile()" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="p-6">
                     <!-- User Information Display -->
                     <div class="mb-6">
-                        <div class="bg-gray-50 rounded-lg p-4">
-                            <div class="flex items-center space-x-3">
+                        <div class="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg p-6 border border-blue-200">
+                            <div class="flex items-center space-x-4">
                                 <div class="flex-shrink-0">
-                                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                                        <i class="fas fa-user text-blue-600 text-xl"></i>
+                                    <div id="profile-modal-avatar" class="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold">
+                                        --
                                     </div>
                                 </div>
-                                <div>
-                                    <h4 class="text-lg font-medium text-gray-900" id="profile-user-name">Loading...</h4>
-                                    <p class="text-sm text-gray-500" id="profile-user-role">Loading...</p>
-                                    <p class="text-xs text-gray-400" id="profile-user-email">Loading...</p>
+                                <div class="flex-1">
+                                    <h4 class="text-xl font-semibold text-gray-900" id="profile-user-name">Loading...</h4>
+                                    <p class="text-sm text-gray-600 mt-1" style="word-break: break-all;">
+                                        <i class="fas fa-envelope mr-1 text-blue-500"></i>
+                                        <span id="profile-user-email">Loading...</span>
+                                    </p>
+                                    <p class="text-xs text-gray-500 mt-2">
+                                        <i class="fas fa-id-badge mr-1"></i>
+                                        Role: <span class="font-medium" id="profile-user-role">Loading...</span>
+                                    </p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Password Change Section -->
-                    <div class="border-t border-gray-200 pt-6">
-                        <h4 class="text-md font-medium text-gray-900 mb-4">
-                            <i class="fas fa-key mr-2 text-orange-600"></i>Change Password
-                        </h4>
-                        
-                        <form id="profilePasswordForm" class="space-y-4">
-                            <div>
-                                <label for="profileCurrentPassword" class="block text-sm font-medium text-gray-700 mb-1">
-                                    <i class="fas fa-lock mr-2"></i>Current Password
-                                </label>
-                                <div class="relative">
-                                    <input type="password" id="profileCurrentPassword" required
-                                           class="w-full px-3 py-2 border border-gray-300 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                                           placeholder="Enter current password">
-                                    <button type="button" id="toggleProfileCurrentPassword" onclick="toggleProfileCurrentPasswordVisibility()" 
-                                            class="absolute inset-y-0 right-0 pr-3 flex items-center">
-                                        <i id="profileCurrentPasswordEyeIcon" class="fas fa-eye text-gray-400"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <div>
-                                <label for="profileNewPassword" class="block text-sm font-medium text-gray-700 mb-1">
-                                    <i class="fas fa-lock mr-2"></i>New Password
-                                </label>
-                                <div class="relative">
-                                    <input type="password" id="profileNewPassword" required
-                                           class="w-full px-3 py-2 border border-gray-300 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                                           placeholder="Enter new password">
-                                    <button type="button" id="toggleProfileNewPassword" onclick="toggleProfileNewPasswordVisibility()" 
-                                            class="absolute inset-y-0 right-0 pr-3 flex items-center">
-                                        <i id="profileNewPasswordEyeIcon" class="fas fa-eye text-gray-400"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <div>
-                                <label for="profileConfirmNewPassword" class="block text-sm font-medium text-gray-700 mb-1">
-                                    <i class="fas fa-lock mr-2"></i>Confirm New Password
-                                </label>
-                                <div class="relative">
-                                    <input type="password" id="profileConfirmNewPassword" required
-                                           class="w-full px-3 py-2 border border-gray-300 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                                           placeholder="Confirm new password">
-                                    <button type="button" id="toggleProfileConfirmNewPassword" onclick="toggleProfileConfirmNewPasswordVisibility()" 
-                                            class="absolute inset-y-0 right-0 pr-3 flex items-center">
-                                        <i id="profileConfirmNewPasswordEyeIcon" class="fas fa-eye text-gray-400"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <div id="profilePasswordError" class="hidden bg-red-50 border border-red-200 p-2 text-red-700 text-sm">
-                                <i class="fas fa-exclamation-triangle mr-2"></i>
-                                <span id="profilePasswordErrorText"></span>
-                            </div>
-                            
-                            <div class="flex justify-end space-x-3 pt-4">
-                                <button type="button" onclick="hideUserProfile()" 
-                                        class="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors">
-                                    Cancel
-                                </button>
-                                <button type="submit" id="changeProfilePasswordBtn" 
-                                        class="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors">
-                                    <i class="fas fa-key mr-2"></i>Change Password
-                                </button>
-                            </div>
-                        </form>
-                    </div>
                 </div>
             </div>
         </div>
@@ -491,21 +456,76 @@
         }
 
         // User Profile modal
+        // Profile dropdown functions
+        function toggleProfileDropdown() {
+            const dropdown = document.getElementById('profile-dropdown');
+            const icon = document.getElementById('profile-dropdown-icon');
+            
+            if (dropdown.classList.contains('hidden')) {
+                dropdown.classList.remove('hidden');
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+            } else {
+                dropdown.classList.add('hidden');
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+            }
+        }
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('profile-dropdown');
+            const profileButton = event.target.closest('button[onclick*="toggleProfileDropdown"]');
+            
+            if (!profileButton && dropdown && !dropdown.contains(event.target)) {
+                dropdown.classList.add('hidden');
+                const icon = document.getElementById('profile-dropdown-icon');
+                if (icon) {
+                    icon.classList.remove('fa-chevron-up');
+                    icon.classList.add('fa-chevron-down');
+                }
+            }
+        });
+        
+        // Generate user initials from full name
+        function getUserInitials(fullName) {
+            if (!fullName) return '--';
+            
+            const names = fullName.trim().split(' ');
+            if (names.length === 1) {
+                return names[0].substring(0, 2).toUpperCase();
+            }
+            return (names[0][0] + names[names.length - 1][0]).toUpperCase();
+        }
+        
+        // Update user avatar with initials
+        function updateUserAvatar(fullName) {
+            const avatar = document.getElementById('user-avatar');
+            if (avatar) {
+                avatar.textContent = getUserInitials(fullName);
+            }
+        }
+        
         function showUserProfile() {
             const user = JSON.parse(localStorage.getItem('user'));
             if (user) {
                 document.getElementById('profile-user-name').textContent = user.full_name || user.username;
                 document.getElementById('profile-user-role').textContent = user.role.charAt(0).toUpperCase() + user.role.slice(1);
                 document.getElementById('profile-user-email').textContent = user.username || user.email || 'N/A';
+                
+                // Update profile modal avatar with initials
+                const modalAvatar = document.getElementById('profile-modal-avatar');
+                if (modalAvatar) {
+                    modalAvatar.textContent = getUserInitials(user.full_name || user.username);
+                }
             }
             document.getElementById('userProfileModal').classList.remove('hidden');
+            // Close the dropdown
+            document.getElementById('profile-dropdown').classList.add('hidden');
         }
 
         function hideUserProfile() {
             document.getElementById('userProfileModal').classList.add('hidden');
-            // Clear form
-            document.getElementById('profilePasswordForm').reset();
-            hideProfilePasswordError();
         }
 
         // Toggle upload submenu
@@ -598,6 +618,9 @@
                 document.getElementById('user-name').textContent = userData.full_name || userData.username;
                 document.getElementById('user-role').textContent = userData.role.charAt(0).toUpperCase() + userData.role.slice(1);
                 
+                // Update user avatar with initials
+                updateUserAvatar(userData.full_name || userData.username);
+                
                 // Show/hide admin-only menus based on role
                 const userManagementMenu = document.getElementById('user-management-menu');
                 const acceConsoleMenu = document.getElementById('acce-console-menu');
@@ -650,6 +673,9 @@
                     const userData = JSON.parse(user);
                     document.getElementById('user-name').textContent = userData.full_name || userData.username;
                     document.getElementById('user-role').textContent = userData.role.charAt(0).toUpperCase() + userData.role.slice(1);
+                    
+                    // Update user avatar with initials
+                    updateUserAvatar(userData.full_name || userData.username);
                     
                     // Show/hide admin-only menus based on role
                     const userManagementMenu = document.getElementById('user-management-menu');
